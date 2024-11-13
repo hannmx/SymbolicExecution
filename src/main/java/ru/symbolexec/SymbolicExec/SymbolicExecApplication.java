@@ -1,0 +1,13 @@
+package ru.symbolexec.SymbolicExec;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class SymbolicExecApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(SymbolicExecApplication.class, args);
+	}
+
+}
