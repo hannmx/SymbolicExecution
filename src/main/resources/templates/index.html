@@ -1,10 +1,45 @@
 <!DOCTYPE html>
-<html lang="en">
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Symbolic Execution</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-<body>
 
+<body>
+<header>
+    <nav class="nav__link">
+        <a href="/">Главная</a>
+        <a href="/report">Отчеты</a>
+    </nav>
+</header>
+<main>
+    <h1>Загрузите APK-файл для анализа</h1>
+    <form class="form__upload" method="POST" action="/upload" enctype="multipart/form-data">
+        <input type="file" name="file" required>
+        <button type="submit">Загрузка и анализ</button>
+    </form>
+    <p th:text="${message}"></p>
+
+    <h2>Недавние анализы</h2>
+    <table>
+        <thead>
+        <tr>
+            <th>Имя файла</th>
+            <th>Дата анализа</th>
+            <th>Статус</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="report : ${reports}">
+            <td th:text="${report.apkName}"></td>
+            <td th:text="${report.analysisDate}"></td>
+            <td th:text="${report.status}"></td>
+        </tr>
+        </tbody>
+    </table>
+</main>
 </body>
+
 </html>

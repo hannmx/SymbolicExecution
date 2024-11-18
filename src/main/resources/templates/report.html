@@ -1,10 +1,42 @@
 <!DOCTYPE html>
-<html lang="en">
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <title>Report</title>
+    <title>Отчеты анализа</title>
 </head>
-<body>
 
+<body>
+<header>
+    <nav class="nav__link">
+        <a href="/">Главная</a>
+        <a href="/report">Отчеты</a>
+    </nav>
+</header>
+<main>
+    <h1>Отчеты анализа</h1>
+    <table>
+        <thead>
+        <tr>
+            <th>Имя файла</th>
+            <th>Дата анализа</th>
+            <th>Статус</th>
+            <th>Ссылка на отчет</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="report : ${reports}">
+            <td th:text="${report.apkName}"></td>
+            <td th:text="${report.analysisDate}"></td>
+            <td th:text="${report.status}"></td>
+            <td>
+                <a th:href="@{${report.reportPath}}" th:if="${report.reportPath}" target="_blank">Открыть</a>
+                <span th:if="${!report.reportPath}">Отчет недоступен</span>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</main>
 </body>
+
 </html>

@@ -1,0 +1,47 @@
+* {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: #fff;
+}
+
+header {
+    background: #333;
+    border-radius: 10px;
+    text-align: center;
+}
+
+main {
+    background: rgb(113, 37, 37);
+    margin-top: 20px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 20px;
+    border-radius: 10px;
+    width: 90%;
+}
+
+.nav__link {
+    display: flex;
+    justify-content: center;
+}
+
+nav a {
+    color: white;
+    text-align: center;
+    padding: 20px;
+    text-decoration: none;
+    font-size: 18px;
+    transition: 0.3s;
+}
+
+nav a:hover {
+    color: white;
+    background: rgb(113, 37, 37);
+}
+
+.form__upload {
+    margin-top: 20px;
+}
