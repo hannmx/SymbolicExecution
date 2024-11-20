@@ -5,16 +5,29 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class DexParser {
-    private static final String APKTOOL_PATH = "/path/to/apktool";
+    private static final String APKTOOL_PATH = "C:\\APKTool\\apktool.jar";
 
     public File extractDex(File apkFile) throws Exception {
-        // Использование APKTool для декомпиляции APK-файлов и извлечения DEX-файлов
+        if (!new File(APKTOOL_PATH).exists()) {
+            throw new RuntimeException("APKTool not found at: " + APKTOOL_PATH);
+        }
+
         Path outputDir = Paths.get("output", apkFile.getName());
         ProcessBuilder processBuilder = new ProcessBuilder(
-                APKTOOL_PATH, "d", apkFile.getAbsolutePath(), "-o", outputDir.toString());
+                "java", "-jar", APKTOOL_PATH, "d", apkFile.getAbsolutePath(), "-o", outputDir.toString());
+        processBuilder.inheritIO(); // Для отображения вывода процесса
         Process process = processBuilder.start();
-        process.waitFor();
+        int exitCode = process.waitFor();
 
-        return outputDir.resolve("classes.dex").toFile();
+        if (exitCode != 0) {
+            throw new RuntimeException("APKTool failed to process APK: " + apkFile.getName());
+        }
+
+        File dexFile = outputDir.resolve("classes.dex").toFile();
+        if (!dexFile.exists()) {
+            throw new RuntimeException("DEX file not found in output directory!");
+        }
+
+        return dexFile;
     }
 }

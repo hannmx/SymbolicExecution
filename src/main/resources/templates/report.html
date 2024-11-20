@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Отчеты анализа</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
@@ -27,11 +28,12 @@
         <tbody>
         <tr th:each="report : ${reports}">
             <td th:text="${report.apkName}"></td>
-            <td th:text="${report.analysisDate}"></td>
+            <td th:text="${#dates.format(report.analysisDate, 'yyyy-MM-dd HH:mm')}"></td>
             <td th:text="${report.status}"></td>
             <td>
-                <a th:href="@{${report.reportPath}}" th:if="${report.reportPath}" target="_blank">Открыть</a>
-                <span th:if="${!report.reportPath}">Отчет недоступен</span>
+                <a th:href="@{/reports/{path}(path=${#strings.replace(report.reportPath, 'reports/', '')})}"
+                   th:if="${report.reportPath}" target="_blank">Скачать</a>
+                <span th:if="${!report.reportPath}">Недоступен</span>
             </td>
         </tr>
         </tbody>

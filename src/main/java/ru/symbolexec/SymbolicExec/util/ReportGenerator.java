@@ -5,7 +5,12 @@ import java.io.FileWriter;
 
 public class ReportGenerator {
     public String generate(String reportContent) throws Exception {
-        File reportFile = new File("reports/report.txt");
+        File reportDir = new File("reports");
+        if (!reportDir.exists()) {
+            reportDir.mkdirs();
+        }
+
+        File reportFile = new File(reportDir, "report_" + System.currentTimeMillis() + ".txt");
         try (FileWriter writer = new FileWriter(reportFile)) {
             writer.write(reportContent);
         }

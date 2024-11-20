@@ -19,7 +19,8 @@ public class MainController {
 
     @GetMapping("/")
     public String index(Model model) {
-        model.addAttribute("reports", reports); // Передача списка отчетов на главную страницу
+        model.addAttribute("reports", reports); // Список отчётов
+        model.addAttribute("message", ""); // Пустое сообщение при загрузке страницы
         return "index";
     }
 
@@ -32,7 +33,7 @@ public class MainController {
             ApkAnalyzer analyzer = new ApkAnalyzer();
             String reportPath = analyzer.analyzeApk(apkFile);
 
-            // Добавляем отчет в список
+            // Успешный анализ
             AnalysisReport report = new AnalysisReport(
                     reportPath,
                     LocalDateTime.now(),
@@ -41,11 +42,11 @@ public class MainController {
             );
             reports.add(report);
 
-            model.addAttribute("message", "Analysis completed. Report saved at: " + reportPath);
+            model.addAttribute("message", "Анализ завершён. Отчет сохранен: " + reportPath);
         } catch (Exception e) {
-            model.addAttribute("message", "Error: " + e.getMessage());
+            model.addAttribute("message", "Ошибка: " + e.getMessage());
 
-            // Добавляем отчет об ошибке
+            // Добавляем отчёт об ошибке
             AnalysisReport report = new AnalysisReport(
                     null,
                     LocalDateTime.now(),
@@ -59,7 +60,8 @@ public class MainController {
 
     @GetMapping("/report")
     public String report(Model model) {
-        model.addAttribute("reports", reports); // Передача списка отчетов на страницу отчетов
+        model.addAttribute("reports", reports); // Передача списка отчётов
         return "report";
     }
 }
+

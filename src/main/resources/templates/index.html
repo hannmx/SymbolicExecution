@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Symbolic Execution</title>
+    <title>Главная</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -18,9 +18,10 @@
     <h1>Загрузите APK-файл для анализа</h1>
     <form class="form__upload" method="POST" action="/upload" enctype="multipart/form-data">
         <input type="file" name="file" required>
-        <button type="submit">Загрузка и анализ</button>
+        <button type="submit">Загрузить и анализировать</button>
     </form>
-    <p th:text="${message}"></p>
+    <!-- Сообщение об успехе или ошибке -->
+    <p th:if="${message}" th:text="${message}" class="message"></p>
 
     <h2>Недавние анализы</h2>
     <table>
@@ -34,7 +35,7 @@
         <tbody>
         <tr th:each="report : ${reports}">
             <td th:text="${report.apkName}"></td>
-            <td th:text="${report.analysisDate}"></td>
+            <td th:text="${#dates.format(report.analysisDate, 'yyyy-MM-dd HH:mm')}"></td>
             <td th:text="${report.status}"></td>
         </tr>
         </tbody>

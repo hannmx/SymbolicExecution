@@ -1,12 +1,15 @@
 package ru.symbolexec.SymbolicExec.model;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 public class AnalysisReport {
     private String reportPath;
     private LocalDateTime analysisDate;
     private String apkName;
-    private String status; // e.g., "Success", "Error"
+    private String status;
+    private List<String> vulnerabilities = new ArrayList<>();
 
     public AnalysisReport(String reportPath, LocalDateTime analysisDate, String apkName, String status) {
         this.reportPath = reportPath;
@@ -15,35 +18,17 @@ public class AnalysisReport {
         this.status = status;
     }
 
-    public String getReportPath() {
-        return reportPath;
+    // Геттеры и сеттеры
+
+    public void addVulnerability(String vulnerability) {
+        this.vulnerabilities.add(vulnerability);
     }
 
-    public LocalDateTime getAnalysisDate() {
-        return analysisDate;
-    }
-
-    public String getApkName() {
-        return apkName;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setReportPath(String reportPath) {
-        this.reportPath = reportPath;
-    }
-
-    public void setAnalysisDate(LocalDateTime analysisDate) {
-        this.analysisDate = analysisDate;
-    }
-
-    public void setApkName(String apkName) {
-        this.apkName = apkName;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
+    public String toString() {
+        return "Report for APK: " + apkName +
+                "\nStatus: " + status +
+                "\nAnalysis Date: " + analysisDate +
+                "\nVulnerabilities: " + vulnerabilities +
+                "\nReport Path: " + reportPath;
     }
 }
