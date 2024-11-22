@@ -1,32 +1,52 @@
 package ru.symbolexec.SymbolicExec.core;
 
 import com.microsoft.z3.*;
-import org.jf.dexlib2.*;
-import org.jf.dexlib2.iface.Method;
-import org.jf.dexlib2.iface.ClassDef;
+import com.github.javaparser.JavaParser;
+import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import org.jf.dexlib2.dexbacked.DexBackedDexFile;
 import org.jf.dexlib2.dexbacked.DexBackedMethodImplementation;
+import org.jf.dexlib2.iface.ClassDef;
+import org.jf.dexlib2.iface.Method;
 import org.jf.dexlib2.iface.instruction.Instruction;
 
 import java.io.File;
 import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class SymbolicExecution {
-    /**
-     * Основной метод анализа DEX-файла.
-     *
-     * @param dexFile файл формата DEX, извлеченный из APK.
-     * @return строка с результатом анализа (наличие или отсутствие уязвимостей).
-     * @throws Exception если произошла ошибка во время анализа.
-     */
+
+    // Метод для анализа исходных Java файлов
+    public void analyzeJavaFile(File javaFile) {
+        try {
+            // Чтение файла Java
+            String code = new String(Files.readAllBytes(javaFile.toPath()));
+
+            // Используем JavaParser для парсинга кода
+            JavaParser javaParser = new JavaParser();
+            CompilationUnit compilationUnit = javaParser.parse(code).getResult().orElseThrow(() -> new RuntimeException("Invalid Java code"));
+
+            // Перебор всех методов в коде
+            compilationUnit.accept(new VoidVisitorAdapter<Void>() {
+                @Override
+                public void visit(MethodDeclaration method, Void arg) {
+                    super.visit(method, arg);
+                    System.out.println("Found method: " + method.getName());
+                }
+            }, null);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Основной метод анализа DEX-файла
     public String analyzeDex(File dexFile) throws Exception {
         // Чтение содержимого DEX-файла в массив байтов
         byte[] dexBytes = Files.readAllBytes(dexFile.toPath());
-
-        // Создание объекта DEX-файла из массива байтов
         DexBackedDexFile dexBackedDexFile = new DexBackedDexFile(null, dexBytes);
 
-        // Создание контекста Z3 для символьного исполнения
+        // Создание контекста Z3
         Context ctx = new Context();
         Solver solver = ctx.mkSolver();
 
@@ -41,6 +61,12 @@ public class SymbolicExecution {
 
                 // Анализ инструкций метода
                 analyzeMethodInstructions(ctx, solver, method);
+
+                // Если файл содержит исходный код Java, добавим анализ с использованием javaparser
+                File javaFile = new File(className + ".java");  // Здесь предполагаем, что у нас есть Java исходники
+                if (javaFile.exists()) {
+                    analyzeJavaFile(javaFile);  // Анализируем Java файл с помощью javaparser
+                }
             }
         }
 
@@ -51,13 +77,7 @@ public class SymbolicExecution {
         return "No vulnerabilities detected.";
     }
 
-    /**
-     * Метод для анализа инструкций конкретного метода.
-     *
-     * @param ctx    контекст Z3.
-     * @param solver решатель Z3.
-     * @param method метод, инструкции которого анализируются.
-     */
+    // Метод для анализа инструкций конкретного метода
     private void analyzeMethodInstructions(Context ctx, Solver solver, Method method) {
         // Пропускаем методы без реализации
         if (!(method.getImplementation() instanceof DexBackedMethodImplementation)) {
