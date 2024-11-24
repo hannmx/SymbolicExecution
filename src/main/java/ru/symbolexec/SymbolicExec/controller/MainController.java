@@ -9,8 +9,10 @@ import ru.symbolexec.SymbolicExec.model.AnalysisReport;
 import ru.symbolexec.SymbolicExec.util.FileHandler;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 @Controller
@@ -59,8 +61,9 @@ public class MainController {
     }
 
     @GetMapping("/report")
-    public String report(Model model) {
-        model.addAttribute("reports", reports); // Передача списка отчётов
+    public String getReport(Model model) {
+        String formattedDate = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date());
+        model.addAttribute("formattedDate", formattedDate);
         return "report";
     }
 }

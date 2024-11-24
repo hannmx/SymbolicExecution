@@ -28,7 +28,7 @@
         <tbody>
         <tr th:each="report : ${reports}">
             <td th:text="${report.apkName}"></td>
-            <td th:text="${#dates.format(report.analysisDate, 'yyyy-MM-dd HH:mm')}"></td>
+            <td th:text="${formattedDate}"></td>
             <td th:text="${report.status}"></td>
             <td>
                 <a th:href="@{/reports/{path}(path=${#strings.replace(report.reportPath, 'reports/', '')})}"
