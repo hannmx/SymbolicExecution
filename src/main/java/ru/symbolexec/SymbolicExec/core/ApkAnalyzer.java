@@ -1,13 +1,14 @@
 package ru.symbolexec.SymbolicExec.core;
 
 import ru.symbolexec.SymbolicExec.util.ReportGenerator;
+
 import java.io.File;
 import java.util.List;
 
 public class ApkAnalyzer {
 
-    // Метод для анализа APK
-    public String analyzeApk(File apkFile) {
+    // Метод для анализа APK и возвращения детализированных результатов
+    public AnalysisResultDto analyzeApk(File apkFile) {
         try {
             System.out.println("Starting analysis for APK: " + apkFile.getName());
 
@@ -30,13 +31,14 @@ public class ApkAnalyzer {
 
             ReportGenerator reportGenerator = new ReportGenerator();
             String reportPath = reportGenerator.generate(symbolicReports.toString());
-            System.out.println("Analysis completed successfully. Report saved at: " + reportPath);
 
-            return reportPath;
+            System.out.println("Analysis completed successfully. Report saved at: " + reportPath);
+            return new AnalysisResultDto(reportPath, symbolicReports.toString());
+
         } catch (Exception e) {
             System.err.println("Error during APK analysis: " + e.getMessage());
             e.printStackTrace();
-            return "Error during analysis: " + e.getMessage();
+            throw new RuntimeException("Error during analysis: " + e.getMessage());
         }
     }
 }

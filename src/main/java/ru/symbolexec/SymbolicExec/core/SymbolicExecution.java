@@ -5,6 +5,7 @@ import org.jf.dexlib2.dexbacked.DexBackedMethodImplementation;
 import org.jf.dexlib2.iface.ClassDef;
 import org.jf.dexlib2.iface.Method;
 import org.jf.dexlib2.iface.instruction.Instruction;
+import org.jf.dexlib2.iface.instruction.formats.Instruction22c;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -49,27 +50,36 @@ public class SymbolicExecution {
         }
 
         DexBackedMethodImplementation implementation = (DexBackedMethodImplementation) method.getImplementation();
+        Stack<String> symbolicStack = new Stack<>();
+        Map<String, String> registers = new HashMap<>(); // Хранение значений регистров
+
         for (Instruction instruction : implementation.getInstructions()) {
             String opcodeName = instruction.getOpcode().name();
 
-            // Проверка на некорректные условия (только критические действия)
-            if (opcodeName.contains("IF") && containsCriticalCheck(instruction)) {
-                addVulnerability("Conditional check", method.getName());
+            // Учет путей выполнения
+            if (opcodeName.contains("IF")) {
+                analyzeConditionalBranch(instruction, symbolicStack, method.getName());
+                continue;
             }
 
-            // Хардкодированные строки (проверяем чувствительность данных)
-            if (opcodeName.contains("CONST_STRING") && isSensitiveString(instruction)) {
-                addVulnerability("Hardcoded string", method.getName());
+            // Анализ вызова методов
+            if (opcodeName.contains("INVOKE")) {
+                analyzeMethodInvocation(instruction, symbolicStack, method.getName());
+                continue;
             }
 
-            // Потенциальные SQL-инъекции
-            if (opcodeName.contains("INVOKE") && instruction.toString().contains("execSQL")) {
-                addVulnerability("Potential SQL injection", method.getName());
+            // Хардкодированные строки
+            if (opcodeName.contains("CONST_STRING")) {
+                String str = extractString(instruction);
+                symbolicStack.push(str);
+                if (isSensitiveString(str)) {
+                    addVulnerability("Hardcoded sensitive string", method.getName());
+                }
             }
 
-            // Отсутствие обработки исключений
+            // Обработка исключений
             if (opcodeName.contains("THROW")) {
-                addVulnerability("Unhandled exception", method.getName());
+                analyzeThrowInstruction(instruction, method.getName());
             }
         }
     }
@@ -79,17 +89,45 @@ public class SymbolicExecution {
         vulnerabilities.computeIfAbsent(type, k -> new HashSet<>()).add(method);
     }
 
-    // Проверка на чувствительность строки
-    private boolean isSensitiveString(Instruction instruction) {
-        String instructionDetails = instruction.toString().toLowerCase();
-        return instructionDetails.contains("password") || instructionDetails.contains("secret");
+    // Извлечение строки из инструкции
+    private String extractString(Instruction instruction) {
+        if (instruction instanceof Instruction22c) {
+            return instruction.toString(); // Пример, уточните для вашего случая
+        }
+        return "";
     }
 
-    // Проверка на критические условные проверки
-    private boolean containsCriticalCheck(Instruction instruction) {
-        // Проверяем, связана ли инструкция с критическим действием (пример)
-        String instructionDetails = instruction.toString().toLowerCase();
-        return instructionDetails.contains("auth") || instructionDetails.contains("permission");
+    // Проверка на чувствительность строки
+    private boolean isSensitiveString(String str) {
+        String lowerStr = str.toLowerCase();
+        return lowerStr.contains("password") || lowerStr.contains("secret") ||
+                lowerStr.contains("token") || lowerStr.contains("key");
+    }
+
+    // Анализ веток выполнения (IF)
+    private void analyzeConditionalBranch(Instruction instruction, Stack<String> symbolicStack, String methodName) {
+        // Обработка веток true/false (для простоты выводим сообщение)
+        System.out.println("Analyzing conditional branch in method: " + methodName);
+        addVulnerability("Conditional branch detected", methodName);
+    }
+
+    // Анализ вызова методов
+    private void analyzeMethodInvocation(Instruction instruction, Stack<String> symbolicStack, String methodName) {
+        // Проверка на вызовы методов с потенциальной уязвимостью
+        String invokedMethod = instruction.toString();
+        if (invokedMethod.contains("execSQL")) {
+            String sqlQuery = symbolicStack.isEmpty() ? "unknown" : symbolicStack.pop();
+            if (sqlQuery.toLowerCase().contains("select")) {
+                addVulnerability("Potential SQL injection", methodName);
+            }
+        }
+    }
+
+    // Анализ обработки исключений
+    private void analyzeThrowInstruction(Instruction instruction, String methodName) {
+        // Проверяем, обработано ли исключение в try-catch (упрощенно)
+        System.out.println("Throw detected in method: " + methodName);
+        addVulnerability("Unhandled exception", methodName);
     }
 
     // Форматирование найденных уязвимостей

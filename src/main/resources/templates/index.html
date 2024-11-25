@@ -23,20 +23,20 @@
     <!-- Сообщение об успехе или ошибке -->
     <p th:if="${message}" th:text="${message}" class="message"></p>
 
-    <h2>Недавние анализы</h2>
+    <h2>Результаты анализа</h2>
     <table>
         <thead>
         <tr>
-            <th>Имя файла</th>
-            <th>Дата анализа</th>
-            <th>Статус</th>
+            <th>ID анализа</th>
+            <th>ID отчета</th>
+            <th>Детали анализа</th>
         </tr>
         </thead>
         <tbody>
-        <tr th:each="report : ${reports}">
-            <td th:text="${report.apkName}"></td>
-            <td th:text="${formattedDate}"></td>
-            <td th:text="${report.status}"></td>
+        <tr th:each="result : ${results}">
+            <td th:text="${result.id}"></td>
+            <td th:text="${result.reportId}"></td>
+            <td th:text="${result.details}"></td>
         </tr>
         </tbody>
     </table>

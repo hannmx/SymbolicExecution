@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<html xmlns:th="http://www.thymeleaf.org" lang="ru">
 
 <head>
     <meta charset="UTF-8">
@@ -27,15 +27,15 @@
         </thead>
         <tbody>
         <tr th:each="report : ${reports}">
-            <td th:text="${report.apkName}"></td>
-            <td th:text="${formattedDate}"></td>
+            <td th:text="${report.fileName}"></td>
+            <td th:text="${report.analysisDate}"></td>
             <td th:text="${report.status}"></td>
             <td>
-                <a th:href="@{/reports/{path}(path=${#strings.replace(report.reportPath, 'reports/', '')})}"
-                   th:if="${report.reportPath}" target="_blank">Скачать</a>
-                <span th:if="${!report.reportPath}">Недоступен</span>
+                <span th:if="${report.reportPath != null}" th:text="${report.reportPath}"></span>
+                <span th:if="${report.reportPath == null}">Путь не указан</span>
             </td>
         </tr>
+
         </tbody>
     </table>
 </main>

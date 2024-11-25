@@ -4,42 +4,37 @@
 }
 
 body {
-    background: #fff;
+    font-family: Arial, sans-serif;
+    background: #f4f4f4;
 }
 
 header {
     background: #333;
+    padding: 10px 0;
     border-radius: 10px;
     text-align: center;
-}
-
-main {
-    background: rgb(113, 37, 37);
-    margin-top: 20px;
-    margin-left: auto;
-    margin-right: auto;
-    padding: 20px;
-    border-radius: 10px;
-    width: 90%;
-}
-
-.nav__link {
-    display: flex;
-    justify-content: center;
 }
 
 nav a {
     color: white;
-    text-align: center;
-    padding: 20px;
+    padding: 10px 20px;
     text-decoration: none;
     font-size: 18px;
-    transition: 0.3s;
+    transition: background 0.3s;
 }
 
 nav a:hover {
-    color: white;
-    background: rgb(113, 37, 37);
+    background: #666;
+}
+
+main {
+    background: #fff;
+    margin-top: 20px;
+    margin: 20px auto;
+    padding: 20px;
+    border-radius: 10px;
+    width: 80%;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .form__upload {
@@ -49,11 +44,22 @@ nav a:hover {
 .table {
     width: 100%;
     border-collapse: collapse;
+    margin-top: 20px;
 }
 
 .table th, .table td {
     border: 1px solid #ddd;
-    padding: 8px;
+    padding: 8px 12px;
     text-align: left;
 }
 
+.table th {
+    background-color: #f4f4f4;
+    font-weight: bold;
+}
+
+.message {
+    margin-top: 20px;
+    color: green;
+    font-weight: bold;
+}
