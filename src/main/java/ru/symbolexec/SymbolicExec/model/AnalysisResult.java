@@ -13,14 +13,14 @@ public class AnalysisResult {
     @Column(name = "report_id", nullable = false)
     private Long reportId; // Связь с AnalysisReport
 
-    @Column(name = "details", columnDefinition = "TEXT", nullable = false)
-    private String details; // Подробности анализа
+    @Column(name = "grouped_details", columnDefinition = "TEXT", nullable = true)
+    private String groupedDetails; // Для хранения группированного отчета
 
     public AnalysisResult() {}
 
-    public AnalysisResult(Long reportId, String details) {
+    public AnalysisResult(Long reportId, String groupedDetails) {
         this.reportId = reportId;
-        this.details = details;
+        this.groupedDetails = groupedDetails;
     }
 
     // Getters и Setters
@@ -40,11 +40,11 @@ public class AnalysisResult {
         this.reportId = reportId;
     }
 
-    public String getDetails() {
-        return details;
+    public String getGroupedDetails() {
+        return groupedDetails;
     }
 
-    public void setDetails(String details) {
-        this.details = details;
+    public void setGroupedDetails(String groupedDetails) {
+        this.groupedDetails = groupedDetails;
     }
 }

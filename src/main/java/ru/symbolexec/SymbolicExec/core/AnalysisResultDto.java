@@ -1,21 +1,19 @@
 package ru.symbolexec.SymbolicExec.core;
 
-import java.util.Map;
-
 public class AnalysisResultDto {
     private String reportPath;
-    private String details;
+    private String groupedDetails;
 
-    public AnalysisResultDto(String reportPath, String details) {
+    public AnalysisResultDto(String reportPath, String groupedDetails) {
         this.reportPath = reportPath;
-        this.details = details;
+        this.groupedDetails = groupedDetails;
+    }
+
+    public String getGroupedDetails() {
+        return groupedDetails;
     }
 
     public String getReportPath() {
         return reportPath;
-    }
-
-    public String getDetails() {
-        return details;
     }
 }

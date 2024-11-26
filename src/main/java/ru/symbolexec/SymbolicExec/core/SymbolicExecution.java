@@ -16,6 +16,9 @@ public class SymbolicExecution {
     // Карта для хранения типов уязвимостей и соответствующих методов
     private final Map<String, Set<String>> vulnerabilities = new HashMap<>();
 
+    // Новая структура для хранения уязвимостей по типу, классу и методу
+    private final Map<String, Map<String, Set<String>>> vulnerabilitiesByTypeAndClass = new HashMap<>();
+
     public String analyzeDex(File dexFile) throws Exception {
         // Чтение содержимого DEX-файла в массив байтов
         byte[] dexBytes = Files.readAllBytes(dexFile.toPath());
@@ -35,16 +38,16 @@ public class SymbolicExecution {
                 analyzedMethods.add(methodName);
 
                 System.out.println("  Analyzing method: " + methodName);
-                analyzeMethodInstructions(method);
+                analyzeMethodInstructions(className, method);
             }
         }
 
         // Формируем отчет
-        return formatVulnerabilities();
+        return formatGroupedVulnerabilities();
     }
 
     // Метод для анализа инструкций конкретного метода
-    private void analyzeMethodInstructions(Method method) {
+    private void analyzeMethodInstructions(String className, Method method) {
         if (!(method.getImplementation() instanceof DexBackedMethodImplementation)) {
             return;
         }
@@ -58,13 +61,13 @@ public class SymbolicExecution {
 
             // Учет путей выполнения
             if (opcodeName.contains("IF")) {
-                analyzeConditionalBranch(instruction, symbolicStack, method.getName());
+                analyzeConditionalBranch(instruction, symbolicStack, className, method.getName());
                 continue;
             }
 
             // Анализ вызова методов
             if (opcodeName.contains("INVOKE")) {
-                analyzeMethodInvocation(instruction, symbolicStack, method.getName());
+                analyzeMethodInvocation(instruction, symbolicStack, className, method.getName());
                 continue;
             }
 
@@ -73,18 +76,26 @@ public class SymbolicExecution {
                 String str = extractString(instruction);
                 symbolicStack.push(str);
                 if (isSensitiveString(str)) {
-                    addVulnerability("Hardcoded sensitive string", method.getName());
+                    addVulnerability("Hardcoded sensitive string", className, method.getName());
                 }
             }
 
             // Обработка исключений
             if (opcodeName.contains("THROW")) {
-                analyzeThrowInstruction(instruction, method.getName());
+                analyzeThrowInstruction(instruction, className, method.getName());
             }
         }
     }
 
-    // Добавление уязвимости в карту
+    // Новый метод добавления уязвимостей с учетом класса
+    private void addVulnerability(String type, String className, String method) {
+        vulnerabilitiesByTypeAndClass
+                .computeIfAbsent(type, k -> new HashMap<>())
+                .computeIfAbsent(className, k -> new HashSet<>())
+                .add(method);
+    }
+
+    // Старый метод добавления для совместимости
     private void addVulnerability(String type, String method) {
         vulnerabilities.computeIfAbsent(type, k -> new HashSet<>()).add(method);
     }
@@ -105,52 +116,71 @@ public class SymbolicExecution {
     }
 
     // Анализ веток выполнения (IF)
-    private void analyzeConditionalBranch(Instruction instruction, Stack<String> symbolicStack, String methodName) {
-        // Обработка веток true/false (для простоты выводим сообщение)
+    private void analyzeConditionalBranch(Instruction instruction, Stack<String> symbolicStack, String className, String methodName) {
         System.out.println("Analyzing conditional branch in method: " + methodName);
-        addVulnerability("Conditional branch detected", methodName);
+        addVulnerability("Conditional branch detected", className, methodName);
     }
 
     // Анализ вызова методов
-    private void analyzeMethodInvocation(Instruction instruction, Stack<String> symbolicStack, String methodName) {
-        // Проверка на вызовы методов с потенциальной уязвимостью
+    private void analyzeMethodInvocation(Instruction instruction, Stack<String> symbolicStack, String className, String methodName) {
         String invokedMethod = instruction.toString();
         if (invokedMethod.contains("execSQL")) {
             String sqlQuery = symbolicStack.isEmpty() ? "unknown" : symbolicStack.pop();
             if (sqlQuery.toLowerCase().contains("select")) {
-                addVulnerability("Potential SQL injection", methodName);
+                addVulnerability("Potential SQL injection", className, methodName);
             }
         }
     }
 
     // Анализ обработки исключений
-    private void analyzeThrowInstruction(Instruction instruction, String methodName) {
-        // Проверяем, обработано ли исключение в try-catch (упрощенно)
+    private void analyzeThrowInstruction(Instruction instruction, String className, String methodName) {
         System.out.println("Throw detected in method: " + methodName);
-        addVulnerability("Unhandled exception", methodName);
+        addVulnerability("Unhandled exception", className, methodName);
     }
 
-    // Форматирование найденных уязвимостей
-    private String formatVulnerabilities() {
-        if (vulnerabilities.isEmpty()) {
+    // Новый метод форматирования уязвимостей
+    protected String formatGroupedVulnerabilities() {
+        if (vulnerabilitiesByTypeAndClass.isEmpty()) {
             return "No vulnerabilities detected.";
         }
 
-        StringBuilder report = new StringBuilder("Detected vulnerabilities:\n");
+        StringBuilder report = new StringBuilder("Grouped vulnerabilities:\n");
 
-        // Группируем уязвимости по типам
-        for (Map.Entry<String, Set<String>> entry : vulnerabilities.entrySet()) {
-            report.append("- ").append(entry.getKey()).append(" found in methods:\n");
-            List<String> sortedMethods = new ArrayList<>(entry.getValue());
-            Collections.sort(sortedMethods); // Сортируем методы для улучшения восприятия
+        // Критические уязвимости
+        Map<String, List<String>> criticalVulnerabilities = new HashMap<>();
+        Map<String, List<String>> lessCriticalVulnerabilities = new HashMap<>();
 
-            // Выводим только уникальные методы
-            for (String method : sortedMethods) {
-                report.append("  - ").append(method).append("\n");
-            }
-        }
+        vulnerabilitiesByTypeAndClass.forEach((type, classes) -> {
+            classes.forEach((className, methods) -> {
+                for (String method : methods) {
+                    // Разделяем на критические и менее критичные уязвимости
+                    if (type.equals("Potential SQL injection") || type.equals("Hardcoded sensitive string")) {
+                        criticalVulnerabilities
+                                .computeIfAbsent(type, k -> new ArrayList<>())
+                                .add(className + ":" + method);
+                    } else {
+                        lessCriticalVulnerabilities
+                                .computeIfAbsent(type, k -> new ArrayList<>())
+                                .add(className + ":" + method);
+                    }
+                }
+            });
+        });
 
-        // Убираем повторения и выводим компактно
+        // Выводим критичные уязвимости в первую очередь
+        report.append("Critical vulnerabilities:\n");
+        criticalVulnerabilities.forEach((type, items) -> {
+            report.append("- ").append(type).append(" (").append(items.size()).append(" methods):\n");
+            items.stream().limit(2).forEach(item -> report.append("  * ").append(item).append("\n")); // Выводим 2 примера
+        });
+
+        // Далее выводим менее критичные
+        report.append("\nLess critical vulnerabilities:\n");
+        lessCriticalVulnerabilities.forEach((type, items) -> {
+            report.append("- ").append(type).append(" (").append(items.size()).append(" methods):\n");
+            items.stream().limit(2).forEach(item -> report.append("  * ").append(item).append("\n")); // Выводим 2 примера
+        });
+
         return report.toString();
     }
 }

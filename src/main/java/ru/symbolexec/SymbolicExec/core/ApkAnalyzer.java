@@ -31,9 +31,10 @@ public class ApkAnalyzer {
 
             ReportGenerator reportGenerator = new ReportGenerator();
             String reportPath = reportGenerator.generate(symbolicReports.toString());
+            String groupedReport = symbolicExecution.formatGroupedVulnerabilities();
 
             System.out.println("Analysis completed successfully. Report saved at: " + reportPath);
-            return new AnalysisResultDto(reportPath, symbolicReports.toString());
+            return new AnalysisResultDto(reportPath, groupedReport);
 
         } catch (Exception e) {
             System.err.println("Error during APK analysis: " + e.getMessage());

@@ -29,14 +29,14 @@
         <tr>
             <th>ID анализа</th>
             <th>ID отчета</th>
-            <th>Детали анализа</th>
+            <th>Детали анализа уязвимостей</th>
         </tr>
         </thead>
         <tbody>
         <tr th:each="result : ${results}">
             <td th:text="${result.id}"></td>
             <td th:text="${result.reportId}"></td>
-            <td th:text="${result.details}"></td>
+            <td th:text="${result.groupedDetails}"></td>
         </tr>
         </tbody>
     </table>

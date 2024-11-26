@@ -25,13 +25,11 @@ public class MainController {
     @Autowired
     private AnalysisResultRepository analysisResultRepository;
 
-
     @GetMapping("/")
     public String index(Model model) {
-        // Загружаем данные из AnalysisReport и AnalysisResult
         model.addAttribute("reports", reportRepository.findAll());
         model.addAttribute("results", analysisResultRepository.findAll());
-        model.addAttribute("message", ""); // Пустое сообщение при загрузке страницы
+        model.addAttribute("message", "");
         return "index";
     }
 
@@ -44,7 +42,7 @@ public class MainController {
             ApkAnalyzer analyzer = new ApkAnalyzer();
             AnalysisResultDto resultDto = analyzer.analyzeApk(apkFile);
 
-            // Сохраняем отчёт
+            // Сохраняем отчет
             AnalysisReport report = new AnalysisReport(
                     resultDto.getReportPath(),
                     LocalDateTime.now(),
@@ -53,12 +51,12 @@ public class MainController {
             );
             reportRepository.save(report);
 
-            // Сохраняем детали анализа
-            AnalysisResult analysisResult = new AnalysisResult(report.getId(), resultDto.getDetails());
+            // Сохраняем только группированные детали
+            AnalysisResult analysisResult = new AnalysisResult(report.getId(), resultDto.getGroupedDetails());
             analysisResultRepository.save(analysisResult);
 
             model.addAttribute("message", "Анализ завершён. Отчет сохранен: " + resultDto.getReportPath());
-            model.addAttribute("resultDetails", resultDto.getDetails()); // Показываем на главной
+            model.addAttribute("resultDetails", resultDto.getGroupedDetails()); // Показываем на главной
         } catch (Exception e) {
             model.addAttribute("message", "Ошибка: " + e.getMessage());
         }
