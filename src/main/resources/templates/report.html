@@ -8,37 +8,38 @@
 </head>
 
 <body>
-<header>
-    <nav class="nav__link">
-        <a href="/">Главная</a>
-        <a href="/report">Отчеты</a>
-    </nav>
-</header>
-<main>
-    <h1>Отчеты анализа</h1>
-    <table>
-        <thead>
-        <tr>
-            <th>Имя файла</th>
-            <th>Дата анализа</th>
-            <th>Статус</th>
-            <th>Ссылка на отчет</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="report : ${reports}">
-            <td th:text="${report.fileName}"></td>
-            <td th:text="${report.analysisDate}"></td>
-            <td th:text="${report.status}"></td>
-            <td>
-                <span th:if="${report.reportPath != null}" th:text="${report.reportPath}"></span>
-                <span th:if="${report.reportPath == null}">Путь не указан</span>
-            </td>
-        </tr>
-
-        </tbody>
-    </table>
-</main>
+    <header>
+        <nav class="nav__link">
+            <a href="/">Главная</a>
+            <a href="/report">Отчеты</a>
+        </nav>
+    </header>
+    <main>
+        <h1>Отчеты анализа</h1>
+        <div class="table__content">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Имя файла</th>
+                        <th>Дата анализа</th>
+                        <th>Статус</th>
+                        <th>Ссылка на отчет</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="report : ${reports}">
+                        <td th:text="${report.fileName}"></td>
+                        <td th:text="${report.analysisDate}"></td>
+                        <td th:text="${report.status}"></td>
+                        <td>
+                            <span th:if="${report.reportPath != null}" th:text="${report.reportPath}"></span>
+                            <span th:if="${report.reportPath == null}">Путь не указан</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
 </body>
 
 </html>

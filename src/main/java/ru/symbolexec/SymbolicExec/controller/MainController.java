@@ -5,6 +5,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import ru.symbolexec.SymbolicExec.core.AnalysisResultDto;
 import ru.symbolexec.SymbolicExec.core.ApkAnalyzer;
 import ru.symbolexec.SymbolicExec.model.AnalysisReport;
@@ -15,6 +16,8 @@ import ru.symbolexec.SymbolicExec.util.FileHandler;
 
 import java.io.File;
 import java.time.LocalDateTime;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 @Controller
 public class MainController {
@@ -26,15 +29,25 @@ public class MainController {
     private AnalysisResultRepository analysisResultRepository;
 
     @GetMapping("/")
-    public String index(Model model) {
-        model.addAttribute("reports", reportRepository.findAll());
-        model.addAttribute("results", analysisResultRepository.findAll());
-        model.addAttribute("message", "");
+    public String index(@RequestParam(required = false) String message, Model model) {
+        // Проверяем, если отчеты и результаты не были добавлены в модель, то добавляем их
+        if (!model.containsAttribute("reports")) {
+            model.addAttribute("reports", reportRepository.findAll());
+        }
+        if (!model.containsAttribute("results")) {
+            model.addAttribute("results", analysisResultRepository.findAll());
+        }
+
+        // Добавляем сообщение об успешном завершении анализа, если оно есть
+        if (message != null) {
+            model.addAttribute("message", message);
+        }
+
         return "index";
     }
 
     @PostMapping("/upload")
-    public String uploadFile(@RequestParam("file") MultipartFile file, Model model) {
+    public String uploadFile(@RequestParam("file") MultipartFile file, RedirectAttributes redirectAttributes) {
         try {
             FileHandler fileHandler = new FileHandler();
             File apkFile = fileHandler.saveFile(file);
@@ -55,12 +68,17 @@ public class MainController {
             AnalysisResult analysisResult = new AnalysisResult(report.getId(), resultDto.getGroupedDetails());
             analysisResultRepository.save(analysisResult);
 
-            model.addAttribute("message", "Анализ завершён. Отчет сохранен: " + resultDto.getReportPath());
-            model.addAttribute("resultDetails", resultDto.getGroupedDetails()); // Показываем на главной
+            // Перенаправляем с сообщением и результатами
+            redirectAttributes.addFlashAttribute("message", "Анализ завершён. Отчет сохранен: " + resultDto.getReportPath());
+            redirectAttributes.addFlashAttribute("resultDetails", resultDto.getGroupedDetails());
+
+            // Возвращаем перенаправление на главную страницу с параметром message
+            return "redirect:/?message=" + URLEncoder.encode("Анализ завершён. Отчет сохранен: " + resultDto.getReportPath(), StandardCharsets.UTF_8);
         } catch (Exception e) {
-            model.addAttribute("message", "Ошибка: " + e.getMessage());
+            // Добавляем сообщение об ошибке
+            redirectAttributes.addFlashAttribute("message", "Ошибка: " + e.getMessage());
+            return "redirect:/";
         }
-        return "index";
     }
 
     @GetMapping("/report")

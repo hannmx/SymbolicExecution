@@ -8,39 +8,43 @@
 </head>
 
 <body>
-<header>
-    <nav class="nav__link">
-        <a href="/">Главная</a>
-        <a href="/report">Отчеты</a>
-    </nav>
-</header>
-<main>
-    <h1>Загрузите APK-файл для анализа</h1>
-    <form class="form__upload" method="POST" action="/upload" enctype="multipart/form-data">
-        <input type="file" name="file" required>
-        <button type="submit">Загрузить и анализировать</button>
-    </form>
-    <!-- Сообщение об успехе или ошибке -->
-    <p th:if="${message}" th:text="${message}" class="message"></p>
-
-    <h2>Результаты анализа</h2>
-    <table>
-        <thead>
-        <tr>
-            <th>ID анализа</th>
-            <th>ID отчета</th>
-            <th>Детали анализа уязвимостей</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="result : ${results}">
-            <td th:text="${result.id}"></td>
-            <td th:text="${result.reportId}"></td>
-            <td th:text="${result.groupedDetails}"></td>
-        </tr>
-        </tbody>
-    </table>
-</main>
+<div class="content center__site">
+    <header>
+        <nav class="nav__link">
+            <a href="/">Главная</a>
+            <a href="/report">Отчеты</a>
+        </nav>
+    </header>
+    <main>
+        <h1>Загрузите APK-файл для анализа</h1>
+        <div class="form__content">
+            <form class="form__upload" method="POST" action="/upload" enctype="multipart/form-data">
+                <input type="file" name="file" required>
+                <button type="submit">Загрузить и анализировать</button>
+            </form>
+        </div>
+        <p th:if="${message}" th:text="${message}" class="message"></p>
+        <h2>Результаты анализа</h2>
+        <div class="table__content">
+            <table>
+                <thead>
+                <tr>
+                    <th>ID анализа</th>
+                    <th>ID отчета</th>
+                    <th>Детали анализа уязвимостей</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="result : ${results}">
+                    <td th:text="${result.id}"></td>
+                    <td th:text="${result.reportId}"></td>
+                    <td th:utext="${#strings.replace(result.groupedDetails, '\n', '<br>')}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
 </body>
 
 </html>
