@@ -1,6 +1,7 @@
 package ru.symbolexec.SymbolicExec.core;
 
 import ru.symbolexec.SymbolicExec.util.ReportGenerator;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
@@ -26,19 +27,26 @@ public class ApkAnalyzer {
             System.out.println("DEX files extracted: " + dexFiles.size());
 
             // Создаем объект для выполнения символического анализа
-            SymbolicExecution symbolicExecution = new SymbolicExecution(apkFile);  // Передаем apkFile в SymbolicExecution
+            SymbolicExecution symbolicExecution = new SymbolicExecution(apkFile); // Передаем apkFile в SymbolicExecution
 
             StringBuilder symbolicReports = new StringBuilder();
             for (File dexFile : dexFiles) {
                 System.out.println("Analyzing DEX file: " + dexFile.getName());
-                String symbolicReport = symbolicExecution.analyzeDex(dexFile);
+
+                // Генерация временного пути для отчета
+                String tempReportPath = dexFile.getParent() + File.separator + dexFile.getName() + "_report.txt";
+
+                // Вызываем метод analyzeDex с двумя аргументами
+                String symbolicReport = symbolicExecution.analyzeDex(dexFile, tempReportPath);
                 symbolicReports.append(symbolicReport).append("\n");
             }
 
             // Генерация отчета по результатам анализа
             ReportGenerator reportGenerator = new ReportGenerator();
             String reportPath = reportGenerator.generate(symbolicReports.toString());
-            String groupedReport = symbolicExecution.formatGroupedVulnerabilities();
+
+            // Используем краткий отчет об уязвимостях
+            String groupedReport = symbolicExecution.formatShortVulnerabilitiesReport();
 
             System.out.println("Analysis completed successfully. Report saved at: " + reportPath);
             return new AnalysisResultDto(reportPath, groupedReport);

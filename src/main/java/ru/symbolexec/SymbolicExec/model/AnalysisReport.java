@@ -2,6 +2,8 @@ package ru.symbolexec.SymbolicExec.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "analysis_reports")
@@ -22,6 +24,13 @@ public class AnalysisReport {
 
     @Column(name = "status", nullable = false)
     private String status;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @OneToMany(mappedBy = "report", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<AnalysisResult> results = new ArrayList<>();
 
     public AnalysisReport() {}
 

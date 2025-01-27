@@ -10,16 +10,17 @@ public class AnalysisResult {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "report_id", nullable = false)
-    private Long reportId; // Связь с AnalysisReport
+    @ManyToOne
+    @JoinColumn(name = "report_id", nullable = false)
+    private AnalysisReport report;
 
     @Column(name = "grouped_details", columnDefinition = "TEXT", nullable = true)
-    private String groupedDetails; // Для хранения группированного отчета
+    private String groupedDetails;
 
     public AnalysisResult() {}
 
-    public AnalysisResult(Long reportId, String groupedDetails) {
-        this.reportId = reportId;
+    public AnalysisResult(AnalysisReport report, String groupedDetails) {
+        this.report = report;
         this.groupedDetails = groupedDetails;
     }
 
@@ -32,12 +33,12 @@ public class AnalysisResult {
         this.id = id;
     }
 
-    public Long getReportId() {
-        return reportId;
+    public AnalysisReport getReport() {
+        return report;
     }
 
-    public void setReportId(Long reportId) {
-        this.reportId = reportId;
+    public void setReport(AnalysisReport report) {
+        this.report = report;
     }
 
     public String getGroupedDetails() {

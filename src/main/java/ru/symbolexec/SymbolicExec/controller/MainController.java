@@ -10,14 +10,17 @@ import ru.symbolexec.SymbolicExec.core.AnalysisResultDto;
 import ru.symbolexec.SymbolicExec.core.ApkAnalyzer;
 import ru.symbolexec.SymbolicExec.model.AnalysisReport;
 import ru.symbolexec.SymbolicExec.model.AnalysisResult;
+import ru.symbolexec.SymbolicExec.model.User;
 import ru.symbolexec.SymbolicExec.repository.AnalysisReportRepository;
 import ru.symbolexec.SymbolicExec.repository.AnalysisResultRepository;
+import ru.symbolexec.SymbolicExec.service.UserService;
 import ru.symbolexec.SymbolicExec.util.FileHandler;
 
 import java.io.File;
-import java.time.LocalDateTime;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.security.Principal;
+import java.time.LocalDateTime;
 
 @Controller
 public class MainController {
@@ -28,20 +31,21 @@ public class MainController {
     @Autowired
     private AnalysisResultRepository analysisResultRepository;
 
+    @Autowired
+    private UserService userService;
+
     @GetMapping("/")
-    public String index(@RequestParam(required = false) String message, Model model) {
-        // Проверяем, если отчеты и результаты не были добавлены в модель, то добавляем их
-        if (!model.containsAttribute("reports")) {
-            model.addAttribute("reports", reportRepository.findAll());
-        }
-        if (!model.containsAttribute("results")) {
-            model.addAttribute("results", analysisResultRepository.findAll());
+    public String index(@RequestParam(required = false) String message, Model model, Principal principal) {
+        if (principal == null) {
+            return "redirect:/login";
         }
 
-        // Добавляем сообщение об успешном завершении анализа, если оно есть
-        if (message != null) {
-            model.addAttribute("message", message);
-        }
+        String username = principal.getName();
+        User currentUser = userService.findByUsername(username);
+
+        model.addAttribute("reports", reportRepository.findAll());
+        model.addAttribute("results", analysisResultRepository.findAll());
+        model.addAttribute("message", message);
 
         return "index";
     }
@@ -55,7 +59,6 @@ public class MainController {
             ApkAnalyzer analyzer = new ApkAnalyzer();
             AnalysisResultDto resultDto = analyzer.analyzeApk(apkFile);
 
-            // Сохраняем отчет
             AnalysisReport report = new AnalysisReport(
                     resultDto.getReportPath(),
                     LocalDateTime.now(),
@@ -64,18 +67,12 @@ public class MainController {
             );
             reportRepository.save(report);
 
-            // Сохраняем только группированные детали
-            AnalysisResult analysisResult = new AnalysisResult(report.getId(), resultDto.getGroupedDetails());
+            AnalysisResult analysisResult = new AnalysisResult(report, resultDto.getGroupedDetails());
             analysisResultRepository.save(analysisResult);
 
-            // Перенаправляем с сообщением и результатами
             redirectAttributes.addFlashAttribute("message", "Анализ завершён. Отчет сохранен: " + resultDto.getReportPath());
-            redirectAttributes.addFlashAttribute("resultDetails", resultDto.getGroupedDetails());
-
-            // Возвращаем перенаправление на главную страницу с параметром message
-            return "redirect:/?message=" + URLEncoder.encode("Анализ завершён. Отчет сохранен: " + resultDto.getReportPath(), StandardCharsets.UTF_8);
+            return "redirect:/";
         } catch (Exception e) {
-            // Добавляем сообщение об ошибке
             redirectAttributes.addFlashAttribute("message", "Ошибка: " + e.getMessage());
             return "redirect:/";
         }
