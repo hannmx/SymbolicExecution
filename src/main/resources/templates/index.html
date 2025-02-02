@@ -30,14 +30,12 @@
             <table>
                 <thead>
                 <tr>
-                    <th>ID анализа</th>
                     <th>Номер отчета</th>
                     <th>Детали анализа уязвимостей</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr th:each="result : ${results}">
-                    <td th:text="${result.id}"></td>
                     <td th:text="${result.report.userReportId}"></td>
                     <td th:utext="${#strings.replace(result.groupedDetails, '\n', '<br>')}"></td>
                 </tr>

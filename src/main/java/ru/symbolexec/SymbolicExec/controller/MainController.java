@@ -1,6 +1,11 @@
 package ru.symbolexec.SymbolicExec.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +22,9 @@ import ru.symbolexec.SymbolicExec.service.UserService;
 import ru.symbolexec.SymbolicExec.util.FileHandler;
 
 import java.io.File;
+import java.net.MalformedURLException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -105,8 +113,43 @@ public class MainController {
     }
 
     @GetMapping("/report")
-    public String getReport(Model model) {
-        model.addAttribute("reports", reportRepository.findAll());
+    public String getReport(Model model, Principal principal) {
+        if (principal != null) {
+            String username = principal.getName();
+            User currentUser = userService.findByUsername(username);
+
+            // Загружаем только отчеты текущего пользователя
+            List<AnalysisReport> userReports = reportRepository.findByUser(currentUser);
+            model.addAttribute("reports", userReports);
+        }
         return "report";
     }
+
+    @GetMapping("/download/{id}")
+    public ResponseEntity<Resource> downloadReport(@PathVariable Long id, Principal principal) {
+        AnalysisReport report = reportRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Отчет не найден"));
+
+        // Проверяем, принадлежит ли отчет текущему пользователю
+        User currentUser = userService.findByUsername(principal.getName());
+        if (!report.getUser().equals(currentUser)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build(); // Запрет доступа к чужим отчетам
+        }
+
+        try {
+            Path filePath = Paths.get(report.getReportPath());
+            Resource resource = new UrlResource(filePath.toUri());
+
+            if (resource.exists() && resource.isReadable()) {
+                return ResponseEntity.ok()
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filePath.getFileName() + "\"")
+                        .body(resource);
+            } else {
+                throw new RuntimeException("Файл не найден или недоступен для чтения.");
+            }
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("Ошибка при чтении файла: " + e.getMessage());
+        }
+    }
+
 }

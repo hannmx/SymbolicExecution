@@ -20,6 +20,7 @@
             <table>
                 <thead>
                     <tr>
+                        <th>Номер отчета</th>
                         <th>Имя файла</th>
                         <th>Дата анализа</th>
                         <th>Статус</th>
@@ -28,13 +29,17 @@
                 </thead>
                 <tbody>
                     <tr th:each="report : ${reports}">
+                        <td th:text="${report.userReportId}"></td>
                         <td th:text="${report.fileName}"></td>
                         <td th:text="${report.analysisDate}"></td>
                         <td th:text="${report.status}"></td>
                         <td>
-                            <span th:if="${report.reportPath != null}" th:text="${report.reportPath}"></span>
+    <span th:if="${report.reportPath != null}">
+        <a th:href="@{'/download/' + ${report.id}}" th:text="'Скачать отчет'"></a>
+    </span>
                             <span th:if="${report.reportPath == null}">Путь не указан</span>
                         </td>
+
                     </tr>
                 </tbody>
             </table>
