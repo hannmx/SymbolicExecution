@@ -24,20 +24,21 @@
             </form>
         </div>
         <p th:if="${message}" th:text="${message}" class="message"></p>
+
         <h2>Результаты анализа</h2>
         <div class="table__content">
             <table>
                 <thead>
                 <tr>
                     <th>ID анализа</th>
-                    <th>ID отчета</th>
+                    <th>Номер отчета</th>
                     <th>Детали анализа уязвимостей</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr th:each="result : ${results}">
                     <td th:text="${result.id}"></td>
-                    <td th:text="${result.reportId}"></td>
+                    <td th:text="${result.report.userReportId}"></td>
                     <td th:utext="${#strings.replace(result.groupedDetails, '\n', '<br>')}"></td>
                 </tr>
                 </tbody>

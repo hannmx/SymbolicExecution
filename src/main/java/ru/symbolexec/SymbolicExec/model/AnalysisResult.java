@@ -11,6 +11,10 @@ public class AnalysisResult {
     private Long id;
 
     @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @ManyToOne
     @JoinColumn(name = "report_id", nullable = false)
     private AnalysisReport report;
 
@@ -19,9 +23,11 @@ public class AnalysisResult {
 
     public AnalysisResult() {}
 
-    public AnalysisResult(AnalysisReport report, String groupedDetails) {
+
+    public AnalysisResult(AnalysisReport report, String groupedDetails, User user) {
         this.report = report;
         this.groupedDetails = groupedDetails;
+        this.user = user;
     }
 
     // Getters и Setters
@@ -47,5 +53,11 @@ public class AnalysisResult {
 
     public void setGroupedDetails(String groupedDetails) {
         this.groupedDetails = groupedDetails;
+    }
+    public User getUser() {
+        return user;
+    }
+    public void setUser(User user) {
+        this.user = user;
     }
 }

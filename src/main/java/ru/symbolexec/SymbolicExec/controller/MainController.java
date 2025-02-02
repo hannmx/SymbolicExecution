@@ -17,57 +17,83 @@ import ru.symbolexec.SymbolicExec.service.UserService;
 import ru.symbolexec.SymbolicExec.util.FileHandler;
 
 import java.io.File;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Controller
 public class MainController {
 
-    @Autowired
-    private AnalysisReportRepository reportRepository;
+    private final AnalysisReportRepository reportRepository;
+    private final AnalysisResultRepository analysisResultRepository;
+    private final UserService userService;
 
     @Autowired
-    private AnalysisResultRepository analysisResultRepository;
-
-    @Autowired
-    private UserService userService;
+    public MainController(AnalysisReportRepository reportRepository,
+                          AnalysisResultRepository analysisResultRepository,
+                          UserService userService) {
+        this.reportRepository = reportRepository;
+        this.analysisResultRepository = analysisResultRepository;
+        this.userService = userService;
+    }
 
     @GetMapping("/")
     public String index(@RequestParam(required = false) String message, Model model, Principal principal) {
-        if (principal == null) {
-            return "redirect:/login";
+        if (principal != null) {
+            String username = principal.getName();
+            User currentUser = userService.findByUsername(username);
+            model.addAttribute("currentUser", currentUser);
+
+            // Загрузка отчетов только для текущего пользователя
+            List<AnalysisReport> reports = reportRepository.findByUser(currentUser);
+            model.addAttribute("reports", reports);
+
+            // Загрузка результатов анализа только для текущего пользователя
+            List<AnalysisResult> results = analysisResultRepository.findByUser(currentUser);
+            model.addAttribute("results", results);
         }
 
-        String username = principal.getName();
-        User currentUser = userService.findByUsername(username);
-
-        model.addAttribute("reports", reportRepository.findAll());
-        model.addAttribute("results", analysisResultRepository.findAll());
         model.addAttribute("message", message);
 
         return "index";
     }
 
     @PostMapping("/upload")
-    public String uploadFile(@RequestParam("file") MultipartFile file, RedirectAttributes redirectAttributes) {
+    public String uploadFile(@RequestParam("file") MultipartFile file, RedirectAttributes redirectAttributes, Principal principal) {
         try {
+            if (principal == null) {
+                redirectAttributes.addFlashAttribute("message", "Ошибка: пользователь не авторизован.");
+                return "redirect:/";
+            }
+
             FileHandler fileHandler = new FileHandler();
             File apkFile = fileHandler.saveFile(file);
 
             ApkAnalyzer analyzer = new ApkAnalyzer();
             AnalysisResultDto resultDto = analyzer.analyzeApk(apkFile);
 
+            String username = principal.getName();
+            User currentUser = userService.findByUsername(username);
+
+            // Определение следующего userReportId для текущего пользователя
+            AnalysisReport lastReport = reportRepository.findTopByUserOrderByUserReportIdDesc(currentUser);
+            Long nextUserReportId = (lastReport != null) ? lastReport.getUserReportId() + 1 : 1;
+
+            // Создаем отчет
             AnalysisReport report = new AnalysisReport(
                     resultDto.getReportPath(),
                     LocalDateTime.now(),
                     apkFile.getName(),
                     "Success"
             );
+
+            report.setUser(currentUser);
+            report.setUserReportId(nextUserReportId);
+
             reportRepository.save(report);
 
-            AnalysisResult analysisResult = new AnalysisResult(report, resultDto.getGroupedDetails());
+            // Создаем результат анализа
+            AnalysisResult analysisResult = new AnalysisResult(report, resultDto.getGroupedDetails(), currentUser);
             analysisResultRepository.save(analysisResult);
 
             redirectAttributes.addFlashAttribute("message", "Анализ завершён. Отчет сохранен: " + resultDto.getReportPath());

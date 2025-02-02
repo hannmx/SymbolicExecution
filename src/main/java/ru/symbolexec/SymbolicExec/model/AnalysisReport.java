@@ -11,7 +11,10 @@ public class AnalysisReport {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long id; // Это глобальный ID, оставляем для технических нужд
+
+    @Column(name = "user_report_id")
+    private Long userReportId; // Новый ID для пользователя
 
     @Column(name = "report_path")
     private String reportPath;
@@ -41,45 +44,25 @@ public class AnalysisReport {
         this.status = status;
     }
 
-    // Getters and Setters
+    // Getters и Setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public Long getId() {
-        return id;
-    }
+    public Long getUserReportId() { return userReportId; }
+    public void setUserReportId(Long userReportId) { this.userReportId = userReportId; }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public String getReportPath() { return reportPath; }
+    public void setReportPath(String reportPath) { this.reportPath = reportPath; }
 
-    public String getReportPath() {
-        return reportPath;
-    }
+    public LocalDateTime getAnalysisDate() { return analysisDate; }
+    public void setAnalysisDate(LocalDateTime analysisDate) { this.analysisDate = analysisDate; }
 
-    public void setReportPath(String reportPath) {
-        this.reportPath = reportPath;
-    }
+    public String getFileName() { return fileName; }
+    public void setFileName(String fileName) { this.fileName = fileName; }
 
-    public LocalDateTime getAnalysisDate() {
-        return analysisDate;
-    }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 
-    public void setAnalysisDate(LocalDateTime analysisDate) {
-        this.analysisDate = analysisDate;
-    }
-
-    public String getFileName() {
-        return fileName;
-    }
-
-    public void setFileName(String fileName) {
-        this.fileName = fileName;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
+    public User getUser() { return user; }
+    public void setUser(User user) { this.user = user; }
 }

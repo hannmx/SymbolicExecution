@@ -23,11 +23,16 @@ public class AuthController {
 
     @PostMapping("/register")
     public String registerUser(@RequestParam String username, @RequestParam String password) {
+        if (userRepository.findByUsername(username).isPresent()) {
+            return "redirect:/register?error=exists";
+        }
+
         User user = new User();
         user.setUsername(username);
-        user.setPassword(passwordEncoder.encode(password)); // Шифруем пароль
+        user.setPassword(passwordEncoder.encode(password));
         user.setRole("USER");
         userRepository.save(user);
+
         return "redirect:/login";
     }
 }
