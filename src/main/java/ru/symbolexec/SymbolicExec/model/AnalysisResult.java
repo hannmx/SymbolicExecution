@@ -18,15 +18,16 @@ public class AnalysisResult {
     @JoinColumn(name = "report_id", nullable = false)
     private AnalysisReport report;
 
-    @Column(name = "grouped_details", columnDefinition = "TEXT", nullable = true)
-    private String groupedDetails;
+    @Column(name = "summary_details", columnDefinition = "TEXT", nullable = true)
+    private String summaryDetails; // Краткая версия для главной страницы
+
 
     public AnalysisResult() {}
 
 
-    public AnalysisResult(AnalysisReport report, String groupedDetails, User user) {
+    public AnalysisResult(AnalysisReport report, String summaryDetails, User user) {
         this.report = report;
-        this.groupedDetails = groupedDetails;
+        this.summaryDetails = summaryDetails;
         this.user = user;
     }
 
@@ -47,13 +48,14 @@ public class AnalysisResult {
         this.report = report;
     }
 
-    public String getGroupedDetails() {
-        return groupedDetails;
+    public String getSummaryDetails() {
+        return summaryDetails;
     }
 
-    public void setGroupedDetails(String groupedDetails) {
-        this.groupedDetails = groupedDetails;
+    public void setSummaryDetails(String summaryDetails) {
+        this.summaryDetails = summaryDetails;
     }
+
     public User getUser() {
         return user;
     }

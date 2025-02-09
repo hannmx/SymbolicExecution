@@ -46,10 +46,11 @@ public class ApkAnalyzer {
             String reportPath = reportGenerator.generate(symbolicReports.toString());
 
             // Используем краткий отчет об уязвимостях
-            String groupedReport = symbolicExecution.formatShortVulnerabilitiesReport();
+            String fullReport = symbolicExecution.formatFullVulnerabilitiesReport();
+            String summaryReport = symbolicExecution.formatShortVulnerabilitiesReport();
 
             System.out.println("Analysis completed successfully. Report saved at: " + reportPath);
-            return new AnalysisResultDto(reportPath, groupedReport);
+            return new AnalysisResultDto(reportPath, fullReport, summaryReport);
 
         } catch (IOException e) {
             System.err.println("I/O error during APK analysis: " + e.getMessage());

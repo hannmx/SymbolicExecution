@@ -22,11 +22,13 @@ import ru.symbolexec.SymbolicExec.service.UserService;
 import ru.symbolexec.SymbolicExec.util.FileHandler;
 
 import java.io.File;
+import java.io.PrintWriter;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.Principal;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 
 @Controller
@@ -83,33 +85,47 @@ public class MainController {
             String username = principal.getName();
             User currentUser = userService.findByUsername(username);
 
-            // Определение следующего userReportId для текущего пользователя
+            // Определение следующего userReportId
             AnalysisReport lastReport = reportRepository.findTopByUserOrderByUserReportIdDesc(currentUser);
             Long nextUserReportId = (lastReport != null) ? lastReport.getUserReportId() + 1 : 1;
 
+            // Полный отчет в текстовый файл
+            String reportPath = "reports/report_" + nextUserReportId + ".txt";
+            File fullReportFile = new File(reportPath);
+            try (PrintWriter writer = new PrintWriter(fullReportFile)) {
+                writer.println("Отчет по анализу APK: " + apkFile.getName());
+                writer.println("Дата анализа: " + LocalDateTime.now());
+                writer.println("--------------------------------");
+                writer.println(resultDto.getFullReport()); // Полный отчет
+            }
+
             // Создаем отчет
             AnalysisReport report = new AnalysisReport(
-                    resultDto.getReportPath(),
-                    LocalDateTime.now(),
-                    apkFile.getName(),
-                    "Success"
+                    reportPath, LocalDateTime.now(), apkFile.getName(), "Success"
             );
-
             report.setUser(currentUser);
             report.setUserReportId(nextUserReportId);
-
             reportRepository.save(report);
 
-            // Создаем результат анализа
-            AnalysisResult analysisResult = new AnalysisResult(report, resultDto.getGroupedDetails(), currentUser);
+            // Краткий отчет
+            String summary = extractSummary(resultDto.getSummaryDetails());
+
+            // Создаем результат анализа (в БД хранится краткая версия)
+            AnalysisResult analysisResult = new AnalysisResult(report, summary, currentUser);
             analysisResultRepository.save(analysisResult);
 
-            redirectAttributes.addFlashAttribute("message", "Анализ завершён. Отчет сохранен: " + resultDto.getReportPath());
+            redirectAttributes.addFlashAttribute("message", "Анализ завершён. Отчет доступен для скачивания.");
             return "redirect:/";
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("message", "Ошибка: " + e.getMessage());
             return "redirect:/";
         }
+    }
+
+    // Функция извлекает краткую версию отчета
+    private String extractSummary(String fullReport) {
+        String[] lines = fullReport.split("\n");
+        return String.join("\n", Arrays.copyOfRange(lines, 0, Math.min(5, lines.length)));
     }
 
     @GetMapping("/report")
