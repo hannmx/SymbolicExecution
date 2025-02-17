@@ -8,42 +8,88 @@
 </head>
 
 <body>
-<div class="content center__site">
-    <header>
-        <nav class="nav__link">
-            <a href="/">Главная</a>
-            <a href="/report">Отчеты</a>
-        </nav>
-    </header>
-    <main>
-        <h1>Загрузите APK-файл для анализа</h1>
-        <div class="form__content">
-            <form class="form__upload" method="POST" action="/upload" enctype="multipart/form-data">
-                <input type="file" name="file" required>
-                <button type="submit">Загрузить и анализировать</button>
-            </form>
-        </div>
-        <p th:if="${message}" th:text="${message}" class="message"></p>
+    <div class="content center__site">
+        <header>
+            <nav class="nav__link">
+                <a href="/">Главная</a>
+                <a href="/report">Отчеты</a>
+            </nav>
+        </header>
+        <main>
+            <h1>Загрузите APK-файл для анализа</h1>
+            <div class="form__content">
+                <form class="form__upload" method="POST" action="/upload" enctype="multipart/form-data">
+                    <input type="file" name="file" required>
+                    <button type="submit">Загрузить и анализировать</button>
+                </form>
+            </div>
+            <p th:if="${message}" th:text="${message}" class="message"></p>
 
-        <h2>Результаты анализа</h2>
-        <div class="table__content">
-            <table>
-                <thead>
-                <tr>
-                    <th>Номер отчета</th>
-                    <th>Детали анализа уязвимостей</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="result : ${results}">
-                    <td th:text="${result.report.userReportId}"></td>
-                    <td th:utext="${#strings.replace(result.summaryDetails, '\n', '<br>')}"></td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
-    </main>
-</div>
+            <h2>Результаты анализа</h2>
+            <div class="table__content">
+                <table id="reportTable">
+                    <thead>
+                        <tr>
+                            <th>Номер отчета</th>
+                            <th>Детали анализа уязвимостей</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="result : ${results}">
+                            <td th:text="${result.report.userReportId}"></td>
+                            <td th:utext="${#strings.replace(result.summaryDetails, '\n', '<br>')}"></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="pagination" id="pagination"></div>
+            </div>
+
+        </main>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const rowsPerPage = 5;
+            const table = document.getElementById("reportTable");
+            const tbody = table.querySelector("tbody");
+            const rows = Array.from(tbody.querySelectorAll("tr"));
+            const pagination = document.getElementById("pagination");
+            const pageCount = Math.ceil(rows.length / rowsPerPage);
+
+            function displayPage(page) {
+                tbody.innerHTML = "";
+                const start = (page - 1) * rowsPerPage;
+                const end = start + rowsPerPage;
+                const rowsToShow = rows.slice(start, end);
+
+                rowsToShow.forEach((row, index) => {
+                    row.style.opacity = 0;
+                    row.style.transform = "translateY(20px)";
+                    tbody.appendChild(row);
+
+                    // Анимация появления строк с задержкой
+                    setTimeout(() => {
+                        row.style.transition = "opacity 0.5s ease, transform 0.5s ease";
+                        row.style.opacity = 1;
+                        row.style.transform = "translateY(0)";
+                    }, index * 100); // Задержка для эффекта "по очереди"
+                });
+
+                pagination.innerHTML = "";
+                for (let i = 1; i <= pageCount; i++) {
+                    const pageButton = document.createElement("button");
+                    pageButton.textContent = i;
+                    pageButton.classList.add("page-button");
+                    if (i === page) pageButton.classList.add("active");
+                    pageButton.addEventListener("click", () => displayPage(i));
+                    pagination.appendChild(pageButton);
+                }
+            }
+
+
+            displayPage(1);
+        });
+    </script>
+
 </body>
 
 </html>

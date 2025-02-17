@@ -17,7 +17,7 @@
     <main>
         <h1>Отчеты анализа</h1>
         <div class="table__content">
-            <table>
+            <table id="resultTable">
                 <thead>
                     <tr>
                         <th>Номер отчета</th>
@@ -34,17 +34,61 @@
                         <td th:text="${report.analysisDate}"></td>
                         <td th:text="${report.status}"></td>
                         <td>
-    <span th:if="${report.reportPath != null}">
-        <a th:href="@{'/download/' + ${report.id}}" th:text="'Скачать отчет'"></a>
-    </span>
+                            <span th:if="${report.reportPath != null}">
+                                <a th:href="@{'/download/' + ${report.id}}" th:text="'Скачать отчет'"></a>
+                            </span>
                             <span th:if="${report.reportPath == null}">Путь не указан</span>
                         </td>
 
                     </tr>
                 </tbody>
             </table>
+            <div class="pagination" id="pagination"></div>
         </div>
     </main>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const rowsPerPage = 5;
+            const table = document.getElementById("resultTable");
+            const tbody = table.querySelector("tbody");
+            const rows = Array.from(tbody.querySelectorAll("tr"));
+            const pagination = document.getElementById("pagination");
+            const pageCount = Math.ceil(rows.length / rowsPerPage);
+
+            function displayPage(page) {
+                tbody.innerHTML = "";
+                const start = (page - 1) * rowsPerPage;
+                const end = start + rowsPerPage;
+                const rowsToShow = rows.slice(start, end);
+
+                rowsToShow.forEach((row, index) => {
+                    row.style.opacity = 0;
+                    row.style.transform = "translateY(20px)";
+                    tbody.appendChild(row);
+
+                    // Анимация появления строк с задержкой
+                    setTimeout(() => {
+                        row.style.transition = "opacity 0.5s ease, transform 0.5s ease";
+                        row.style.opacity = 1;
+                        row.style.transform = "translateY(0)";
+                    }, index * 100); // Задержка для эффекта "по очереди"
+                });
+
+                pagination.innerHTML = "";
+                for (let i = 1; i <= pageCount; i++) {
+                    const pageButton = document.createElement("button");
+                    pageButton.textContent = i;
+                    pageButton.classList.add("page-button");
+                    if (i === page) pageButton.classList.add("active");
+                    pageButton.addEventListener("click", () => displayPage(i));
+                    pagination.appendChild(pageButton);
+                }
+            }
+
+
+            displayPage(1);
+        });
+    </script>
 </body>
 
 </html>

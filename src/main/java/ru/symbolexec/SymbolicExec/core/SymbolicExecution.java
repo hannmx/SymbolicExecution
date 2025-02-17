@@ -44,8 +44,8 @@ public class SymbolicExecution {
         instructionAnalyzers.put("MOVE", this::analyzeMemoryOperation);
         instructionAnalyzers.put("STORE", this::analyzeMemoryOperation);
         instructionAnalyzers.put("CONCAT", this::analyzeStringOperation);
-        instructionAnalyzers.put("NEG", this::analyzeUnaryOperation); // Обработка унарных операций
-        instructionAnalyzers.put("SHL", this::analyzeShiftOperation); // Обработка сдвигов
+        instructionAnalyzers.put("NEG", this::analyzeUnaryOperation);
+        instructionAnalyzers.put("SHL", this::analyzeShiftOperation);
         instructionAnalyzers.put("SHR", this::analyzeShiftOperation);
         instructionAnalyzers.put("USHR", this::analyzeShiftOperation);
     }
@@ -139,6 +139,228 @@ public class SymbolicExecution {
         }
     }
 
+    private void analyzeSQLInjection(Instruction instruction, Stack<SymbolicVariable> symbolicStack, String className, String methodName) {
+        String extractedString = extractString(instruction);
+        if (extractedString.toLowerCase().contains("select") || extractedString.toLowerCase().contains("insert") ||
+                extractedString.toLowerCase().contains("update") || extractedString.toLowerCase().contains("delete")) {
+            addVulnerability("SQL Injection", className, methodName);
+            LOGGER.warning("Possible SQL Injection detected in " + className + ":" + methodName);
+        }
+    }
+
+
+    private void analyzeXSS(Instruction instruction, Stack<SymbolicVariable> symbolicStack, String className, String methodName) {
+        String extractedString = extractString(instruction);
+        if (HTML_PATTERN.matcher(extractedString).find()) {
+            addVulnerability("Cross-Site Scripting (XSS)", className, methodName);
+            LOGGER.warning("Potential XSS vulnerability found in " + className + ":" + methodName);
+        }
+    }
+
+
+    private void analyzeInsecureRandomness(Instruction instruction, Stack<SymbolicVariable> symbolicStack, String className, String methodName) {
+        if (instruction.toString().contains("java.util.Random")) {
+            addVulnerability("Insecure Randomness", className, methodName);
+            LOGGER.warning("Insecure randomness found in " + className + ":" + methodName);
+        }
+    }
+
+
+    private void analyzeHardcodedCredentials(Instruction instruction, Stack<SymbolicVariable> symbolicStack, String className, String methodName) {
+        String extractedString = extractString(instruction);
+        if (extractedString.toLowerCase().contains("admin") || extractedString.toLowerCase().contains("password")) {
+            addVulnerability("Hardcoded Credentials", className, methodName);
+            LOGGER.warning("Hardcoded credentials found in " + className + ":" + methodName);
+        }
+    }
+
+    private void analyzeNullPointerDereference(Instruction instruction, Stack<SymbolicVariable> symbolicStack, String className, String methodName) {
+        if (instruction.toString().contains("null")) {
+            addVulnerability("Null Pointer Dereference", className, methodName);
+            LOGGER.warning("Possible null pointer dereference in " + className + ":" + methodName);
+        }
+    }
+
+    private void analyzeInsecureCommunication(Instruction instruction, String className, String methodName) {
+        String str = extractString(instruction);
+        if (str.startsWith("http:")) {
+            addVulnerability("Insecure Communication (No Encryption)", className, methodName);
+        }
+    }
+
+    private void analyzePathTraversal(Instruction instruction, Stack<SymbolicVariable> symbolicStack, String className, String methodName) {
+        String extractedString = extractString(instruction);
+        if (extractedString.contains("../") || extractedString.contains("..\\")) {
+            addVulnerability("Path Traversal", className, methodName);
+            LOGGER.warning("Possible Path Traversal vulnerability found in " + className + ":" + methodName);
+        }
+    }
+
+    private void analyzeCommandInjection(Instruction instruction, Stack<SymbolicVariable> symbolicStack, String className, String methodName) {
+        String extractedString = extractString(instruction);
+        if (extractedString.contains("Runtime.getRuntime().exec")) {
+            addVulnerability("Command Injection", className, methodName);
+            LOGGER.warning("Potential Command Injection found in " + className + ":" + methodName);
+        }
+    }
+
+    private void analyzeIDOR(Instruction instruction, String className, String methodName) {
+        String extractedString = extractString(instruction);
+        if (extractedString.contains("getObjectById") || extractedString.contains("getObject")) {
+            addVulnerability("Insecure Direct Object References (IDOR)", className, methodName);
+            LOGGER.warning("Potential IDOR vulnerability found in " + className + ":" + methodName);
+        }
+    }
+
+    private void analyzeMemoryLeak(Instruction instruction, Stack<SymbolicVariable> symbolicStack, String className, String methodName) {
+        String instructionStr = instruction.toString();
+
+        // Проверка на создание коллекций
+        if (instructionStr.contains("new ArrayList") || instructionStr.contains("new HashMap")) {
+            if (instructionStr.contains("clear()") || instructionStr.contains("remove()") || instructionStr.contains("dispose()")) {
+                // Если вызываются методы очистки коллекции
+                LOGGER.info("Memory management detected in " + className + ":" + methodName + " -> Collection is cleared after use.");
+            } else {
+                // Если коллекция не очищается после использования
+                addVulnerability("Memory Leak", className, methodName);
+                LOGGER.warning("Potential memory leak detected in " + className + ":" + methodName + " -> Collection created but not cleared.");
+            }
+        }
+
+        // Проверка на утечку памяти из-за незакрытых ресурсов (потоки, файлы и т.д.)
+        if (instructionStr.contains("InputStream") || instructionStr.contains("OutputStream") || instructionStr.contains("BufferedReader") || instructionStr.contains("FileReader")) {
+            if (!instructionStr.contains("close()")) {
+                // Если используется InputStream или OutputStream и нет вызова close(), то это может привести к утечке памяти
+                addVulnerability("Memory Leak", className, methodName);
+                LOGGER.warning("Potential memory leak detected due to unclosed stream in " + className + ":" + methodName);
+            }
+        }
+
+        // Проверка на утечку памяти из-за неосвобожденных объектов
+        if (instructionStr.contains("new ") && !instructionStr.contains("close()") && !instructionStr.contains("clear()")) {
+            addVulnerability("Memory Leak", className, methodName);
+            LOGGER.warning("Potential memory leak detected due to unfreed object in " + className + ":" + methodName + " -> Object created but not cleared or closed.");
+        }
+
+        // Проверка на использование больших массивов или коллекций без освобождения памяти
+        if (instructionStr.contains("new byte[") || instructionStr.contains("new char[") || instructionStr.contains("new int[")) {
+            if (!instructionStr.contains("clear()") && !instructionStr.contains("dispose()")) {
+                addVulnerability("Memory Leak", className, methodName);
+                LOGGER.warning("Potential memory leak detected due to unfreed large array in " + className + ":" + methodName + " -> Large array created but not cleared.");
+            }
+        }
+    }
+
+
+    private void analyzeImproperErrorHandling(Instruction instruction, String className, String methodName) {
+        if (instruction.toString().contains("printStackTrace") || instruction.toString().contains("getMessage")) {
+            addVulnerability("Improper Error Handling", className, methodName);
+            LOGGER.warning("Improper error handling detected in " + className + ":" + methodName);
+        }
+    }
+
+    private void analyzeDirectoryTraversal(Instruction instruction, String className, String methodName) {
+        String extractedString = extractString(instruction);
+        if (extractedString.contains("../") || extractedString.contains("..\\")) {
+            addVulnerability("Directory Traversal", className, methodName);
+            LOGGER.warning("Potential directory traversal vulnerability found in " + className + ":" + methodName);
+        }
+    }
+
+    private void analyzeWeakPasswordPolicy(Instruction instruction, String className, String methodName) {
+        String extractedString = extractString(instruction);
+        if (extractedString.toLowerCase().contains("password") && extractedString.length() < 8) {
+            addVulnerability("Weak Password Policy", className, methodName);
+            LOGGER.warning("Weak password policy detected in " + className + ":" + methodName);
+        }
+    }
+
+    private void analyzeHardcodedCryptographicKeys(Instruction instruction, String className, String methodName) {
+        String extractedString = extractString(instruction);
+        if (extractedString.toLowerCase().contains("key") || extractedString.toLowerCase().contains("secret")) {
+            addVulnerability("Use of Hardcoded Cryptographic Keys", className, methodName);
+            LOGGER.warning("Hardcoded cryptographic key found in " + className + ":" + methodName);
+        }
+    }
+
+    private void analyzeDoS(Instruction instruction, String className, String methodName) {
+        if (instruction.toString().contains("Thread.sleep") || instruction.toString().contains("while(true)") || instruction.toString().contains("outOfMemory")) {
+            addVulnerability("Denial of Service (DoS)", className, methodName);
+            LOGGER.warning("Potential DoS vulnerability detected in " + className + ":" + methodName);
+        }
+    }
+
+    private void analyzeImproperSessionHandling(Instruction instruction, String className, String methodName) {
+        if (instruction.toString().contains("setTimeout(0)") || instruction.toString().contains("setSessionCookie")) {
+            addVulnerability("Improper Session Handling", className, methodName);
+            LOGGER.warning("Improper session handling detected in " + className + ":" + methodName);
+        }
+    }
+
+    private void analyzePrivilegeEscalation(Instruction instruction, String className, String methodName) {
+        if (instruction.toString().contains("su") || instruction.toString().contains("root")) {
+            addVulnerability("Privilege Escalation", className, methodName);
+        }
+    }
+
+    private void analyzeBrokenAuthentication(Instruction instruction, Stack<SymbolicVariable> symbolicStack, String className, String methodName) {
+        if (instruction.toString().contains("allowAllHostnameVerifier") || instruction.toString().contains("setAllowAllCertificates")) {
+            addVulnerability("Broken Authentication", className, methodName);
+            LOGGER.warning("Broken Authentication detected in " + className + ":" + methodName);
+        }
+    }
+
+    private void analyzeCSRF(Instruction instruction, Stack<SymbolicVariable> symbolicStack, String className, String methodName) {
+        if (instruction.toString().contains("setRequestMethod(\"POST\")") && !instruction.toString().contains("setHeader(\"CSRF-Token\")")) {
+            addVulnerability("Cross-Site Request Forgery (CSRF)", className, methodName);
+            LOGGER.warning("Potential CSRF vulnerability in " + className + ":" + methodName);
+        }
+    }
+
+    private void analyzeBufferOverflow(Instruction instruction, Stack<SymbolicVariable> symbolicStack, String className, String methodName) {
+        if (instruction.toString().contains("byte[]") && instruction.toString().contains("new byte[")) {
+            addVulnerability("Buffer Overflow", className, methodName);
+            LOGGER.warning("Potential buffer overflow in " + className + ":" + methodName);
+        }
+    }
+
+    private void analyzeRaceCondition(Instruction instruction, String className, String methodName) {
+        if (instruction.toString().contains("Thread.sleep") || instruction.toString().contains("synchronized")) {
+            addVulnerability("Race Condition", className, methodName);
+        }
+    }
+
+    private void analyzeImproperInputValidation(Instruction instruction, String className, String methodName) {
+        if (instruction.toString().contains("getParameter") && !instruction.toString().contains("validate")) {
+            addVulnerability("Improper Input Validation", className, methodName);
+        }
+    }
+
+    private void analyzeSensitiveDataExposure(Instruction instruction, Stack<SymbolicVariable> symbolicStack, String className, String methodName) {
+        if (instruction.toString().contains("Log.")) {
+            addVulnerability("Sensitive Data Exposure", className, methodName);
+            LOGGER.warning("Sensitive data exposure through logging in " + className + ":" + methodName);
+        }
+    }
+
+    private void analyzeImproperAuthorization(Instruction instruction, String className, String methodName) {
+        if (instruction.toString().contains("checkPermission") && instruction.toString().contains("false")) {
+            addVulnerability("Improper Authorization", className, methodName);
+        }
+    }
+
+    private void analyzeInsecureFileUpload(Instruction instruction, String className, String methodName) {
+        if (instruction.toString().contains("fileUpload") && !instruction.toString().contains("validate")) {
+            addVulnerability("Insecure File Upload", className, methodName);
+        }
+    }
+
+    private void analyzeUnsecuredSessions(Instruction instruction, String className, String methodName) {
+        if (instruction.toString().contains("session") && instruction.toString().contains("setTimeout(0)")) {
+            addVulnerability("Unsecured Sessions", className, methodName);
+        }
+    }
+
     public String analyzeDex(File dexFile, String reportFilePath) throws Exception {
         byte[] dexBytes = Files.readAllBytes(dexFile.toPath());
         DexBackedDexFile dexBackedDexFile = new DexBackedDexFile(null, dexBytes);
@@ -167,11 +389,10 @@ public class SymbolicExecution {
     }
 
     private void analyzeMethodInstructions(String className, Method method) {
-        if (!(method.getImplementation() instanceof DexBackedMethodImplementation)) {
+        if (!(method.getImplementation() instanceof DexBackedMethodImplementation implementation)) {
             return;
         }
 
-        DexBackedMethodImplementation implementation = (DexBackedMethodImplementation) method.getImplementation();
         Stack<SymbolicVariable> symbolicStack = new Stack<>();
         Map<String, SymbolicVariable> registers = new HashMap<>();
         Queue<Map<String, SymbolicVariable>> paths = new LinkedList<>();
@@ -208,7 +429,7 @@ public class SymbolicExecution {
         return report.toString();
     }
 
-    private String getSolutionForVulnerability(String type) {
+    public static String getSolutionForVulnerability(String type) {
         return switch (type) {
             case "Необработанное исключение" -> "Добавьте обработку исключений (try-catch) и логирование ошибок.";
             case "Жестко закодированная чувствительная строка" -> "Используйте безопасное хранилище для конфиденциальных данных.";
@@ -268,7 +489,6 @@ public class SymbolicExecution {
         return report.toString();
     }
 
-
     private static final Map<String, String> VULNERABILITY_TYPES = Map.ofEntries(
             Map.entry("Hardcoded sensitive string", "Жестко закодированная чувствительная строка"),
             Map.entry("Unhandled exception", "Необработанное исключение"),
@@ -289,7 +509,7 @@ public class SymbolicExecution {
             Map.entry("Race Condition", "Условие гонки"),
             Map.entry("Privilege Escalation", "Эскалация привилегий"),
             Map.entry("Hardcoded Credentials", "Жестко закодированные учетные данные"),
-            Map.entry("Unsecured File Upload", "Не защищенная загрузка файлов"),
+            Map.entry("Insecure File Upload", "Незащищенная загрузка файлов"),
             Map.entry("Memory Leak", "Утечка памяти"),
             Map.entry("Improper Error Handling", "Неверная обработка ошибок"),
             Map.entry("Directory Traversal", "Перебор директорий"),
@@ -298,6 +518,10 @@ public class SymbolicExecution {
             Map.entry("Denial of Service (DoS)", "Отказ в обслуживании (DoS)"),
             Map.entry("Improper Session Handling", "Неверная обработка сессий")
     );
+
+    public static Map<String, String> getVulnerabilityTypes() {
+        return VULNERABILITY_TYPES;
+    }
 
     private void addVulnerability(String type, String className, String method) {
 

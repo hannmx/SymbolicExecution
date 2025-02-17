@@ -13,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import ru.symbolexec.SymbolicExec.core.AnalysisResultDto;
 import ru.symbolexec.SymbolicExec.core.ApkAnalyzer;
+import ru.symbolexec.SymbolicExec.core.SymbolicExecution;
 import ru.symbolexec.SymbolicExec.model.AnalysisReport;
 import ru.symbolexec.SymbolicExec.model.AnalysisResult;
 import ru.symbolexec.SymbolicExec.model.User;
@@ -28,8 +29,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.Principal;
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 @Controller
 public class MainController {
@@ -125,7 +125,70 @@ public class MainController {
     // Функция извлекает краткую версию отчета
     private String extractSummary(String fullReport) {
         String[] lines = fullReport.split("\n");
-        return String.join("\n", Arrays.copyOfRange(lines, 0, Math.min(5, lines.length)));
+        // Храним информацию о классах и методах для каждой уязвимости
+        Map<String, Set<String>> vulnerabilityClasses = new HashMap<>();
+
+        // Подсчитываем количество каждой уязвимости и где она встречается
+        for (String line : lines) {
+            for (Map.Entry<String, String> entry : SymbolicExecution.getVulnerabilityTypes().entrySet()) {
+                String vulnerabilityEnglish = entry.getKey();
+                String vulnerabilityRussian = entry.getValue();
+
+                // Если в строке найдено описание уязвимости
+                if (line.contains(vulnerabilityRussian)) {
+                    // Находим класс в строке (предполагаем, что класс идёт до двоеточия)
+                    String className = extractClassName(line);
+
+                    if (className != null) {
+                        // Добавляем класс для этой уязвимости
+                        vulnerabilityClasses.putIfAbsent(vulnerabilityEnglish, new HashSet<>());
+                        vulnerabilityClasses.get(vulnerabilityEnglish).add(className);
+                    }
+
+                    System.out.println("Найдена уязвимость: " + vulnerabilityEnglish + " в классе: " + className);  // Для отладки
+                }
+            }
+        }
+
+        // Формируем краткий отчет с рекомендациями
+        StringBuilder summary = new StringBuilder();
+        Map<String, String> vulnerabilityTypes = SymbolicExecution.getVulnerabilityTypes();
+
+        for (String vulnerability : vulnerabilityClasses.keySet()) {
+            // Получаем тип уязвимости
+            String type = vulnerabilityTypes.get(vulnerability);
+
+            // Подсчитываем количество уникальных классов, где была найдена уязвимость
+            int totalClasses = vulnerabilityClasses.get(vulnerability).size();
+
+            // Получаем решение для типа уязвимости
+            String solution = SymbolicExecution.getSolutionForVulnerability(type);
+
+            // Записываем информацию об уязвимости
+            summary.append(type)
+                    .append(": ")
+                    .append(totalClasses)
+                    .append(" классов\n")
+                    .append("Решение: ")
+                    .append(solution)
+                    .append("\n\n");
+        }
+
+        System.out.println("Краткий отчет: " + summary.toString());  // Выводим краткий отчет для отладки
+
+        return summary.toString();
+    }
+
+    // Функция для извлечения имени класса из строки
+    private String extractClassName(String line) {
+        // Предполагаем, что класс идет перед методом, который обозначается символом ":"
+        // Например, "Лог: Lcom/example/SomeClass;:method"
+        String className = null;
+        if (line.contains(":")) {
+            int classEndIndex = line.indexOf(":");
+            className = line.substring(0, classEndIndex).trim();
+        }
+        return className;
     }
 
     @GetMapping("/report")

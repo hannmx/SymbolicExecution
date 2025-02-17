@@ -5,19 +5,19 @@
     <title>Вход</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
-<h1>Вход</h1>
-<form th:action="@{/login}" method="post">
-    <label for="username">Имя пользователя:</label>
-    <input type="text" id="username" name="username">
-    <br>
-    <label for="password">Пароль:</label>
-    <input type="password" id="password" name="password">
-    <br>
-    <button type="submit">Войти</button>
-</form>
-<div>
-    <a th:href="@{/register}">Регистрация</a>
+<body class="body-login">
+<div class="auth-container">
+    <h1 class="auth-title">Вход</h1>
+    <form th:action="@{/login}" method="post" class="auth-form">
+        <label for="username">Имя пользователя:</label>
+        <input type="text" id="username" name="username" class="input-field">
+        <label for="password">Пароль:</label>
+        <input type="password" id="password" name="password" class="input-field">
+        <button type="submit" class="auth-button">Войти</button>
+    </form>
+    <div class="auth-link">
+        <a th:href="@{/register}">Регистрация</a>
+    </div>
 </div>
 </body>
 </html>
